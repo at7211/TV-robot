@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::borrow::Cow;
+use std::process::Command;
 
 use actix_web::body::Body;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
@@ -20,7 +20,9 @@ fn handle_embedded_file(path: &str) -> HttpResponse {
                 Cow::Borrowed(bytes) => bytes.into(),
                 Cow::Owned(bytes) => bytes.into(),
             };
-            HttpResponse::Ok().content_type(from_path(path).first_or_octet_stream().as_ref()).body(body)
+            HttpResponse::Ok()
+                .content_type(from_path(path).first_or_octet_stream().as_ref())
+                .body(body)
         }
         None => HttpResponse::NotFound().body("404 Not Found"),
     }
@@ -89,6 +91,11 @@ async fn volume_up() -> impl Responder {
     "Ok"
 }
 
+async fn skip_intro() -> impl Responder {
+    press(Key::Raw(0x01));
+    "Ok"
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let ip = local_ip::get().unwrap().to_string();
@@ -103,6 +110,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/right", web::post().to(press_right))
             .route("/api/volume_down", web::post().to(volume_down))
             .route("/api/volume_up", web::post().to(volume_up))
+            .route("/api/skip_intro", web::post().to(skip_intro))
     })
     .bind("0.0.0.0:3000")?
     .run()

@@ -69,6 +69,11 @@
           <i class="icon volume up"></i>
         </button>
       </div>
+      <div>
+        <button id="skip_intro" class="ui icon button">
+          <i class="icon step forward"></i>
+        </button>
+      </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
@@ -81,6 +86,7 @@
       const $right = $('#right')
       const $volDown = $('#volume_down')
       const $volUp = $('#volume_up')
+      const $skipIntro = $('#skip_intro')
       const { fromEvent, timer } = rxjs
       const { merge, takeUntil, switchMap } = rxjs.operators
 
@@ -92,6 +98,7 @@
       })
       $volDown.click(() => axios.post('/api/volume_down').catch((err) => alert(err)))
       $volUp.click(() => axios.post('/api/volume_up').catch((err) => alert(err)))
+      $skipIntro.click(() => axios.post('/api/skip_intro').catch((err) => alert(err)))
 
       const leftDown = fromEvent($left, 'mousedown').pipe(merge(fromEvent($left, 'touchstart')))
       const leftUp = fromEvent($left, 'mouseup').pipe(merge(fromEvent($left, 'touchend')))
