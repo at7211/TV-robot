@@ -1,9 +1,8 @@
-use std::borrow::Cow;
 use std::process::Command;
 
-use actix_web::body::Body;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use enigo::*;
+use serde::Deserialize;
 
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
@@ -15,15 +14,9 @@ struct Asset;
 // ref: https://github.com/pyros2097/rust-embed/blob/master/examples/actix.rs
 fn handle_embedded_file(path: &str) -> HttpResponse {
     match Asset::get(path) {
-        Some(content) => {
-            let body: Body = match content {
-                Cow::Borrowed(bytes) => bytes.into(),
-                Cow::Owned(bytes) => bytes.into(),
-            };
-            HttpResponse::Ok()
-                .content_type(from_path(path).first_or_octet_stream().as_ref())
-                .body(body)
-        }
+        Some(content) => HttpResponse::Ok()
+            .content_type(from_path(path).first_or_octet_stream().as_ref())
+            .body(content.data.into_owned()),
         None => HttpResponse::NotFound().body("404 Not Found"),
     }
 }
@@ -31,6 +24,11 @@ fn handle_embedded_file(path: &str) -> HttpResponse {
 fn press(key: enigo::Key) {
     let mut en = Enigo::new();
     en.key_click(key);
+}
+
+fn moving(x: i32, y: i32) {
+    let mut en = Enigo::new();
+    en.mouse_move_to(x, y);
 }
 
 fn get_volume() -> i8 {
@@ -96,6 +94,17 @@ async fn skip_intro() -> impl Responder {
     "Ok"
 }
 
+#[derive(Deserialize)]
+struct TouchParams {
+    x: i32,
+    y: i32,
+}
+
+async fn touch(params: web::Json<TouchParams>) -> impl Responder {
+    moving(params.x, params.y);
+    HttpResponse::Ok().body("Ok")
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let ip = local_ip::get().unwrap().to_string();
@@ -111,6 +120,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/volume_down", web::post().to(volume_down))
             .route("/api/volume_up", web::post().to(volume_up))
             .route("/api/skip_intro", web::post().to(skip_intro))
+            .route("/api/touch", web::post().to(touch))
     })
     .bind("0.0.0.0:3000")?
     .run()

@@ -74,6 +74,7 @@
           <i class="icon step forward"></i>
         </button>
       </div>
+      <div id="touch_pad" style="width: 100vw; height: 200px; background-color: gray;">
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
@@ -87,10 +88,58 @@
       const $volDown = $('#volume_down')
       const $volUp = $('#volume_up')
       const $skipIntro = $('#skip_intro')
+      const $touchPad = $('#touch_pad');
       const { fromEvent, timer } = rxjs
       const { merge, takeUntil, switchMap } = rxjs.operators
 
       const interval = 350
+
+
+      // $touchPad.touch((e) => {
+      //   console.log('----');
+        // if(e.type == 'touchstart' || e.type == 'touchmove' || e.type == 'touchend' || e.type == 'touchcancel'){
+        //   var evt = (typeof e.originalEvent === 'undefined') ? e : e.originalEvent;
+        //   var touch = evt.touches[0] || evt.changedTouches[0];
+        //   x = touch.pageX;
+        //   y = touch.pageY;
+        // } else if (e.type == 'mousedown' || e.type == 'mouseup' || e.type == 'mousemove' || e.type == 'mouseover'|| e.type=='mouseout' || e.type=='mouseenter' || e.type=='mouseleave') {
+        //   x = e.clientX;
+        //   y = e.clientY;
+        // }
+      // })
+
+      // function getObservables() {
+      //   const mouseEventToCoordinate = mouseEvent => {
+      //     mouseEvent.preventDefault();
+      //     return {
+      //       x: mouseEvent.clientX,
+      //       y: mouseEvent.clientY
+      //     };
+      //   };
+
+      //   const touchEventToCoordinate = touchEvent => {
+      //     console.log('---')
+      //     touchEvent.preventDefault();
+      //     return {
+      //       x: touchEvent.changedTouches[0].clientX,
+      //       y: touchEvent.changedTouches[0].clientY
+      //     };
+      //   };
+
+      //   const mouseDowns = fromEvent($touchPad, "mousedown").map(mouseEventToCoordinate);
+      //   const mouseMoves = fromEvent($touchPad, "mousemove").map(mouseEventToCoordinate);
+      //   const mouseUps = fromEvent($touchPad, "mouseup").map(mouseEventToCoordinate);
+
+      //   const touchStarts = fromEvent($touchPad, "touchstart").map(touchEventToCoordinate);
+      //   const touchMoves = fromEvent($touchPad, "touchmove").map(touchEventToCoordinate);
+      //   const touchEnds = fromEvent($touchPad, "touchend").map(touchEventToCoordinate);
+
+      //   const starts = mouseDowns.merge(touchStarts);
+      //   const moves = mouseMoves.merge(touchMoves);
+      //   const ends = mouseUps.merge(touchEnds);
+
+      //   return { starts, moves, ends };
+      // }
 
       $space.click(() => {
         axios.post('/api/space').catch((err) => alert(err))
@@ -104,6 +153,27 @@
       const leftUp = fromEvent($left, 'mouseup').pipe(merge(fromEvent($left, 'touchend')))
       const rightDown = fromEvent($right, 'mousedown').pipe(merge(fromEvent($right, 'touchstart')))
       const rightUp = fromEvent($right, 'mouseup').pipe(merge(fromEvent($right, 'touchend')))
+
+      fromEvent($touchPad, 'touchmove')
+        .subscribe(event => {
+            const x = event.touches[0].clientX;
+            const y = event.touches[0].clientY;
+            axios.post('/api/touch', { x: x, y: y }).catch((err) => alert(err))
+        });
+
+      // const touchDown = fromEvent($touchPad, 'mousedown').pipe(merge(fromEvent($touchPad, 'touchstart')))
+      // const touchUp = fromEvent($touchPad, 'mouseup').pipe(merge(fromEvent($touchPad, 'touchend')))
+
+
+      // const observables = getObservables();
+      // observables.moves.forEach(coordinate => {
+      //   console.log('Moved to', coordinate.x, coordinate.y);
+      //   axios.post('/api/touch', { x: coordinate.x, y: coordinate.y }).catch((err) => alert(err))
+      // });
+
+      // touchDown
+      //   .pipe(switchMap(() => timer(0, interval).pipe(takeUntil(touchUp))))
+      //   .subscribe(() =>  axios.post('/api/touch', { x, y }).then(() => console.log('---')).catch((err) => alert(err)))
 
       rightDown
         .pipe(switchMap(() => timer(0, interval).pipe(takeUntil(rightUp))))
