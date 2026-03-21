@@ -42,6 +42,35 @@
         transform: scale(5);
       }
 
+      #platform-selector {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 8px;
+        gap: 6px;
+      }
+      #platform-selector button {
+        padding: 8px 20px;
+        font-size: 14px;
+        border-radius: 20px;
+        cursor: pointer;
+      }
+      #platform-selector button.active {
+        background: #2185d0 !important;
+        color: #fff !important;
+      }
+      .streaming-shortcuts {
+        display: none;
+      }
+      .streaming-shortcuts.visible {
+        display: flex;
+      }
+      .streaming-shortcuts button {
+        height: 20vh !important;
+      }
+      .streaming-shortcuts button i {
+        transform: scale(3) !important;
+      }
+
       #mode-toggle {
         position: fixed;
         top: 10px;
@@ -124,9 +153,30 @@
           <i class="icon volume up"></i>
         </button>
       </div>
-      <div>
-        <button id="skip_intro" class="ui icon button">
-          <i class="icon step forward"></i>
+      <div id="platform-selector">
+        <button class="ui button" data-platform="netflix">Netflix</button>
+        <button class="ui button" data-platform="youtube">YouTube</button>
+      </div>
+      <div id="netflix-shortcuts" class="streaming-shortcuts">
+        <button id="fullscreen-n" class="ui icon button">
+          <i class="expand icon"></i>
+        </button>
+        <button id="mute-n" class="ui icon button">
+          <i class="volume off icon"></i>
+        </button>
+        <button id="skip-intro-n" class="ui icon button">
+          <i class="step forward icon"></i>
+        </button>
+      </div>
+      <div id="youtube-shortcuts" class="streaming-shortcuts">
+        <button id="fullscreen-y" class="ui icon button">
+          <i class="expand icon"></i>
+        </button>
+        <button id="mute-y" class="ui icon button">
+          <i class="volume off icon"></i>
+        </button>
+        <button id="captions-y" class="ui icon button">
+          <i class="closed captioning icon"></i>
         </button>
       </div>
     </div>
@@ -179,7 +229,6 @@
 
       $('volume_down').addEventListener('click', function () { vibrate(); post('/api/volume_down') })
       $('volume_up').addEventListener('click', function () { vibrate(); post('/api/volume_up') })
-      $('skip_intro').addEventListener('click', function () { vibrate(); post('/api/skip_intro') })
 
       // Left/Right: repeat while held
       function holdButton(el, url) {
@@ -209,6 +258,42 @@
 
       holdButton(leftEl, '/api/left')
       holdButton(rightEl, '/api/right')
+
+      // ========== Platform Selector ==========
+      var currentPlatform = null
+      var platformBtns = document.querySelectorAll('#platform-selector button')
+      var netflixShortcuts = $('netflix-shortcuts')
+      var youtubeShortcuts = $('youtube-shortcuts')
+
+      platformBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var platform = btn.getAttribute('data-platform')
+          if (currentPlatform === platform) {
+            // Deselect
+            currentPlatform = null
+            btn.classList.remove('active')
+            netflixShortcuts.classList.remove('visible')
+            youtubeShortcuts.classList.remove('visible')
+          } else {
+            // Select
+            currentPlatform = platform
+            platformBtns.forEach(function (b) { b.classList.remove('active') })
+            btn.classList.add('active')
+            netflixShortcuts.classList.toggle('visible', platform === 'netflix')
+            youtubeShortcuts.classList.toggle('visible', platform === 'youtube')
+          }
+        })
+      })
+
+      // Netflix shortcuts
+      $('fullscreen-n').addEventListener('click', function () { vibrate(); post('/api/fullscreen') })
+      $('mute-n').addEventListener('click', function () { vibrate(); post('/api/mute') })
+      $('skip-intro-n').addEventListener('click', function () { vibrate(); post('/api/skip_intro') })
+
+      // YouTube shortcuts
+      $('fullscreen-y').addEventListener('click', function () { vibrate(); post('/api/fullscreen') })
+      $('mute-y').addEventListener('click', function () { vibrate(); post('/api/mute') })
+      $('captions-y').addEventListener('click', function () { vibrate(); post('/api/captions') })
 
       // ========== Mouse Mode ==========
       var modeToggle = $('mode-toggle')
