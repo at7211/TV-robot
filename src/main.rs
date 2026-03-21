@@ -101,22 +101,22 @@ async fn volume_up() -> impl Responder {
 }
 
 async fn skip_intro() -> impl Responder {
-    press(Key::Layout('s'));
+    press(Key::Raw(0x01)); // S key (macOS virtual keycode)
     "Ok"
 }
 
 async fn press_fullscreen() -> impl Responder {
-    press(Key::Layout('f'));
+    press(Key::Raw(0x03)); // F key (macOS virtual keycode)
     "Ok"
 }
 
 async fn press_mute() -> impl Responder {
-    press(Key::Layout('m'));
+    press(Key::Raw(0x2E)); // M key (macOS virtual keycode)
     "Ok"
 }
 
 async fn press_captions() -> impl Responder {
-    press(Key::Layout('c'));
+    press(Key::Raw(0x08)); // C key (macOS virtual keycode)
     "Ok"
 }
 
