@@ -1,8 +1,15 @@
+use std::env;
 use std::process::Command;
+use std::sync::Mutex;
 
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use enigo::*;
+use lazy_static::lazy_static;
 use serde::Deserialize;
+
+lazy_static! {
+    static ref ENIGO: Mutex<Enigo> = Mutex::new(Enigo::new());
+}
 
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
@@ -22,23 +29,19 @@ fn handle_embedded_file(path: &str) -> HttpResponse {
 }
 
 fn press(key: enigo::Key) {
-    let mut en = Enigo::new();
-    en.key_click(key);
+    ENIGO.lock().unwrap().key_click(key);
 }
 
 fn mouse_move_relative(dx: i32, dy: i32) {
-    let mut en = Enigo::new();
-    en.mouse_move_relative(dx, dy);
+    ENIGO.lock().unwrap().mouse_move_relative(dx, dy);
 }
 
 fn mouse_click(button: MouseButton) {
-    let mut en = Enigo::new();
-    en.mouse_click(button);
+    ENIGO.lock().unwrap().mouse_click(button);
 }
 
 fn mouse_scroll(dy: i32) {
-    let mut en = Enigo::new();
-    en.mouse_scroll_y(dy);
+    ENIGO.lock().unwrap().mouse_scroll_y(dy);
 }
 
 fn get_volume() -> i8 {
@@ -89,13 +92,13 @@ async fn press_right() -> impl Responder {
 
 async fn volume_down() -> impl Responder {
     let current_vol = get_volume();
-    set_volume(current_vol - 7);
+    set_volume((current_vol - 7).max(0));
     "Ok"
 }
 
 async fn volume_up() -> impl Responder {
     let current_vol = get_volume();
-    set_volume(current_vol + 7);
+    set_volume((current_vol + 7).min(100));
     "Ok"
 }
 
@@ -137,8 +140,9 @@ async fn mouse_scroll_handler(params: web::Json<ScrollParams>) -> impl Responder
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let ip = local_ip::get().unwrap().to_string();
-    let url = format!("http://{}:3000/", ip);
+    let url = format!("http://{}:{}/", ip, port);
     qr2term::print_qr(&url).unwrap();
 
     HttpServer::new(|| {
@@ -155,7 +159,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/mouse/right_click", web::post().to(mouse_right_click))
             .route("/api/mouse/scroll", web::post().to(mouse_scroll_handler))
     })
-    .bind("0.0.0.0:3000")?
+    .bind(format!("0.0.0.0:{}", port))?
     .run()
     .await
 }
