@@ -1,15 +1,9 @@
 use std::env;
 use std::process::Command;
-use std::sync::Mutex;
 
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use enigo::*;
-use lazy_static::lazy_static;
 use serde::Deserialize;
-
-lazy_static! {
-    static ref ENIGO: Mutex<Enigo> = Mutex::new(Enigo::new());
-}
 
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
@@ -29,19 +23,23 @@ fn handle_embedded_file(path: &str) -> HttpResponse {
 }
 
 fn press(key: enigo::Key) {
-    ENIGO.lock().unwrap().key_click(key);
+    let mut en = Enigo::new();
+    en.key_click(key);
 }
 
 fn mouse_move_relative(dx: i32, dy: i32) {
-    ENIGO.lock().unwrap().mouse_move_relative(dx, dy);
+    let mut en = Enigo::new();
+    en.mouse_move_relative(dx, dy);
 }
 
 fn mouse_click(button: MouseButton) {
-    ENIGO.lock().unwrap().mouse_click(button);
+    let mut en = Enigo::new();
+    en.mouse_click(button);
 }
 
 fn mouse_scroll(dy: i32) {
-    ENIGO.lock().unwrap().mouse_scroll_y(dy);
+    let mut en = Enigo::new();
+    en.mouse_scroll_y(dy);
 }
 
 fn get_volume() -> i8 {
