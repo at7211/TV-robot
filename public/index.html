@@ -9,7 +9,6 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"
     />
-    <link rel="stylesheet" href="style.css" />
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>
 
@@ -143,126 +142,163 @@
       </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/6.5.5/rxjs.umd.js"></script>
-
     <script>
-      const $space = $('#space')
-      const $left = $('#left')
-      const $right = $('#right')
-      const $volDown = $('#volume_down')
-      const $volUp = $('#volume_up')
-      const $skipIntro = $('#skip_intro')
-      const { fromEvent, timer } = rxjs
-      const { merge, takeUntil, switchMap } = rxjs.operators
+      // ========== Helpers ==========
+      function post(url, body) {
+        var xhr = new XMLHttpRequest()
+        xhr.open('POST', url, true)
+        if (body) {
+          xhr.setRequestHeader('Content-Type', 'application/json')
+          xhr.send(JSON.stringify(body))
+        } else {
+          xhr.send()
+        }
+      }
 
-      const interval = 350
+      function vibrate() {
+        if (navigator.vibrate) navigator.vibrate(50)
+      }
 
+      function $(id) { return document.getElementById(id) }
 
-      $space.click(() => {
-        axios.post('/api/space').catch((err) => alert(err))
-        $('#space > i').toggle()
+      // ========== Remote Mode ==========
+      var spaceEl = $('space')
+      var leftEl = $('left')
+      var rightEl = $('right')
+      var pauseIcon = spaceEl.querySelector('.pause')
+      var playIcon = spaceEl.querySelector('.play')
+      var isPlaying = true
+
+      spaceEl.addEventListener('click', function () {
+        vibrate()
+        post('/api/space')
+        isPlaying = !isPlaying
+        pauseIcon.style.display = isPlaying ? 'none' : ''
+        playIcon.style.display = isPlaying ? '' : 'none'
       })
-      $volDown.click(() => axios.post('/api/volume_down').catch((err) => alert(err)))
-      $volUp.click(() => axios.post('/api/volume_up').catch((err) => alert(err)))
-      $skipIntro.click(() => axios.post('/api/skip_intro').catch((err) => alert(err)))
 
-      const leftDown = fromEvent($left, 'mousedown').pipe(merge(fromEvent($left, 'touchstart')))
-      const leftUp = fromEvent($left, 'mouseup').pipe(merge(fromEvent($left, 'touchend')))
-      const rightDown = fromEvent($right, 'mousedown').pipe(merge(fromEvent($right, 'touchstart')))
-      const rightUp = fromEvent($right, 'mouseup').pipe(merge(fromEvent($right, 'touchend')))
+      $('volume_down').addEventListener('click', function () { vibrate(); post('/api/volume_down') })
+      $('volume_up').addEventListener('click', function () { vibrate(); post('/api/volume_up') })
+      $('skip_intro').addEventListener('click', function () { vibrate(); post('/api/skip_intro') })
 
+      // Left/Right: repeat while held
+      function holdButton(el, url) {
+        var pressing = false
+        var intervalId = null
 
-      rightDown
-        .pipe(switchMap(() => timer(0, interval).pipe(takeUntil(rightUp))))
-        .subscribe(() => axios.post('/api/right').catch((err) => alert(err)))
+        function start(e) {
+          e.preventDefault()
+          if (pressing) return
+          pressing = true
+          vibrate()
+          post(url)
+          intervalId = setInterval(function () { post(url) }, 350)
+        }
+        function stop() {
+          pressing = false
+          if (intervalId) { clearInterval(intervalId); intervalId = null }
+        }
 
-      leftDown
-        .pipe(switchMap(() => timer(0, interval).pipe(takeUntil(leftUp))))
-        .subscribe(() => axios.post('/api/left').catch((err) => alert(err)))
+        el.addEventListener('touchstart', start)
+        el.addEventListener('touchend', stop)
+        el.addEventListener('touchcancel', stop)
+        el.addEventListener('mousedown', start)
+        el.addEventListener('mouseup', stop)
+        el.addEventListener('mouseleave', stop)
+      }
+
+      holdButton(leftEl, '/api/left')
+      holdButton(rightEl, '/api/right')
 
       // ========== Mouse Mode ==========
-      const $modeToggle = $('#mode-toggle')
-      const $remoteMode = $('#remote-mode')
-      const $mouseMode = $('#mouse-mode')
-      const $title = $('#title')
-      const mouseTrackpad = document.getElementById('mouse-trackpad')
-      const mouseScrollArea = document.getElementById('mouse-scroll-area')
-      let isMouseMode = false
+      var modeToggle = $('mode-toggle')
+      var remoteMode = $('remote-mode')
+      var mouseMode = $('mouse-mode')
+      var title = $('title')
+      var mouseTrackpad = $('mouse-trackpad')
+      var mouseScrollArea = $('mouse-scroll-area')
+      var isMouseMode = false
 
-      $modeToggle.click(() => {
+      modeToggle.addEventListener('click', function () {
         isMouseMode = !isMouseMode
         if (isMouseMode) {
-          $remoteMode.hide()
-          $title.hide()
-          $mouseMode.addClass('active')
-          $modeToggle.html('<i class="gamepad icon"></i> 遙控模式')
+          remoteMode.style.display = 'none'
+          title.style.display = 'none'
+          mouseMode.classList.add('active')
+          modeToggle.innerHTML = '<i class="gamepad icon"></i> 遙控模式'
         } else {
-          $mouseMode.removeClass('active')
-          $remoteMode.show()
-          $title.show()
-          $modeToggle.html('<i class="mouse pointer icon"></i> 滑鼠模式')
+          mouseMode.classList.remove('active')
+          remoteMode.style.display = ''
+          title.style.display = ''
+          modeToggle.innerHTML = '<i class="mouse pointer icon"></i> 滑鼠模式'
         }
       })
 
-      // Trackpad
-      let lastTouchX = null
-      let lastTouchY = null
-      const sensitivity = 2.0
+      // Trackpad with throttle
+      var lastTouchX = null
+      var lastTouchY = null
+      var sensitivity = 2.0
+      var moveThrottled = false
 
-      mouseTrackpad.addEventListener('touchstart', (e) => {
+      mouseTrackpad.addEventListener('touchstart', function (e) {
         e.preventDefault()
         lastTouchX = e.touches[0].clientX
         lastTouchY = e.touches[0].clientY
       })
 
-      mouseTrackpad.addEventListener('touchmove', (e) => {
+      mouseTrackpad.addEventListener('touchmove', function (e) {
         e.preventDefault()
-        const t = e.touches[0]
+        if (moveThrottled) return
+        var t = e.touches[0]
         if (lastTouchX !== null) {
-          const dx = Math.round((t.clientX - lastTouchX) * sensitivity)
-          const dy = Math.round((t.clientY - lastTouchY) * sensitivity)
+          var dx = Math.round((t.clientX - lastTouchX) * sensitivity)
+          var dy = Math.round((t.clientY - lastTouchY) * sensitivity)
           if (dx !== 0 || dy !== 0) {
-            axios.post('/api/mouse/move', { dx, dy }).catch(() => {})
+            post('/api/mouse/move', { dx: dx, dy: dy })
+            moveThrottled = true
+            setTimeout(function () { moveThrottled = false }, 16)
           }
         }
         lastTouchX = t.clientX
         lastTouchY = t.clientY
       })
 
-      mouseTrackpad.addEventListener('touchend', () => {
+      mouseTrackpad.addEventListener('touchend', function () {
         lastTouchX = null
         lastTouchY = null
       })
 
-      // Scroll
-      let lastScrollY = null
+      // Scroll with throttle
+      var lastScrollY = null
+      var scrollThrottled = false
 
-      mouseScrollArea.addEventListener('touchstart', (e) => {
+      mouseScrollArea.addEventListener('touchstart', function (e) {
         e.preventDefault()
         lastScrollY = e.touches[0].clientY
       })
 
-      mouseScrollArea.addEventListener('touchmove', (e) => {
+      mouseScrollArea.addEventListener('touchmove', function (e) {
         e.preventDefault()
-        const t = e.touches[0]
+        if (scrollThrottled) return
+        var t = e.touches[0]
         if (lastScrollY !== null) {
-          const dy = Math.round((lastScrollY - t.clientY) / 10)
+          var dy = Math.round((lastScrollY - t.clientY) / 10)
           if (dy !== 0) {
-            axios.post('/api/mouse/scroll', { dy }).catch(() => {})
+            post('/api/mouse/scroll', { dy: dy })
+            scrollThrottled = true
+            setTimeout(function () { scrollThrottled = false }, 16)
           }
         }
         lastScrollY = t.clientY
       })
 
-      mouseScrollArea.addEventListener('touchend', () => {
+      mouseScrollArea.addEventListener('touchend', function () {
         lastScrollY = null
       })
 
       // Clicks
-      $('#mouse-left').click(() => axios.post('/api/mouse/left_click').catch((err) => alert(err)))
-      $('#mouse-right').click(() => axios.post('/api/mouse/right_click').catch((err) => alert(err)))
+      $('mouse-left').addEventListener('click', function () { vibrate(); post('/api/mouse/left_click') })
+      $('mouse-right').addEventListener('click', function () { vibrate(); post('/api/mouse/right_click') })
     </script>
   </body>
 </html>
