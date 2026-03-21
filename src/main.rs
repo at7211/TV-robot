@@ -101,7 +101,22 @@ async fn volume_up() -> impl Responder {
 }
 
 async fn skip_intro() -> impl Responder {
-    press(Key::Raw(0x01));
+    press(Key::Layout('s'));
+    "Ok"
+}
+
+async fn press_fullscreen() -> impl Responder {
+    press(Key::Layout('f'));
+    "Ok"
+}
+
+async fn press_mute() -> impl Responder {
+    press(Key::Layout('m'));
+    "Ok"
+}
+
+async fn press_captions() -> impl Responder {
+    press(Key::Layout('c'));
     "Ok"
 }
 
@@ -152,6 +167,9 @@ async fn main() -> std::io::Result<()> {
             .route("/api/volume_down", web::post().to(volume_down))
             .route("/api/volume_up", web::post().to(volume_up))
             .route("/api/skip_intro", web::post().to(skip_intro))
+            .route("/api/fullscreen", web::post().to(press_fullscreen))
+            .route("/api/mute", web::post().to(press_mute))
+            .route("/api/captions", web::post().to(press_captions))
             .route("/api/mouse/move", web::post().to(mouse_move))
             .route("/api/mouse/left_click", web::post().to(mouse_left_click))
             .route("/api/mouse/right_click", web::post().to(mouse_right_click))
