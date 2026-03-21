@@ -12,11 +12,24 @@ This project is used to control computer's up, down, left, and right, and volume
 cargo install --git https://github.com/LarryLuTW/TV-robot
 ```
 
+## Features
+
+- **遙控模式** — 播放/暫停、快轉/倒轉、音量調整、跳過片頭
+- **滑鼠模式** — 觸控板控制滑鼠、左右鍵點擊、捲動
+
+右上角按鈕可切換兩種模式。
+
 ## Run
 
-#### 1. Connect your phone to the same wifi as your computer 
+#### 1. Connect your phone to the same wifi as your computer
 
 #### 2. Run `tv-robot` command and the QRCode will appear on the terminal.
+
+If port 3000 is already in use, you can specify a different port:
+
+```sh
+PORT=3001 tv-robot
+```
 
 <img width="697" alt="Screen Shot 2021-03-31 at 3 49 53 PM" src="https://user-images.githubusercontent.com/10403741/113109894-046d5f80-9239-11eb-9f09-61dc372218c0.png">
 
