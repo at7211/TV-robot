@@ -34,21 +34,77 @@
         display: flex;
         margin-bottom: 5px;
       }
-      button {
+      .main.ui > div > button {
         height: 35vh;
         flex: 1;
         margin: 0 0.15em !important;
       }
-      i {
+      .main.ui > div > button > i {
         transform: scale(5);
+      }
+
+      #mode-toggle {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+      }
+      #mode-toggle i {
+        transform: scale(1) !important;
+      }
+      #mouse-mode {
+        display: none;
+        width: 100%;
+        height: 100vh;
+        flex-direction: column;
+      }
+      #mouse-mode.active {
+        display: flex;
+      }
+      #mouse-trackpad {
+        flex: 1;
+        background-color: #e0e0e0;
+        touch-action: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        color: #999;
+      }
+      #mouse-scroll-area {
+        width: 50px;
+        background-color: #ccc;
+        touch-action: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        color: #888;
+        font-size: 0.8em;
+      }
+      #mouse-buttons {
+        display: flex;
+        height: 80px;
+      }
+      #mouse-buttons button {
+        flex: 1;
+        height: 80px !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        font-size: 1.1em;
       }
     </style>
   </head>
 
   <body>
-    <h2>肥豬電腦遙控器</h2>
+    <button id="mode-toggle" class="ui labeled icon button">
+      <i class="mouse pointer icon"></i>
+      滑鼠模式
+    </button>
 
-    <div class="main ui container">
+    <h2 id="title">肥豬電腦遙控器</h2>
+
+    <div id="remote-mode" class="main ui container">
       <div>
         <button id="left" class="ui icon button">
           <i class="icon backward"></i>
@@ -74,7 +130,17 @@
           <i class="icon step forward"></i>
         </button>
       </div>
-      <div id="touch_pad" style="width: 100vw; height: 200px; background-color: gray;">
+    </div>
+
+    <div id="mouse-mode">
+      <div style="display: flex; flex: 1;">
+        <div id="mouse-trackpad">在此滑動控制滑鼠</div>
+        <div id="mouse-scroll-area">捲動</div>
+      </div>
+      <div id="mouse-buttons">
+        <button id="mouse-left" class="ui button">左鍵</button>
+        <button id="mouse-right" class="ui button">右鍵</button>
+      </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
@@ -88,58 +154,11 @@
       const $volDown = $('#volume_down')
       const $volUp = $('#volume_up')
       const $skipIntro = $('#skip_intro')
-      const $touchPad = $('#touch_pad');
       const { fromEvent, timer } = rxjs
       const { merge, takeUntil, switchMap } = rxjs.operators
 
       const interval = 350
 
-
-      // $touchPad.touch((e) => {
-      //   console.log('----');
-        // if(e.type == 'touchstart' || e.type == 'touchmove' || e.type == 'touchend' || e.type == 'touchcancel'){
-        //   var evt = (typeof e.originalEvent === 'undefined') ? e : e.originalEvent;
-        //   var touch = evt.touches[0] || evt.changedTouches[0];
-        //   x = touch.pageX;
-        //   y = touch.pageY;
-        // } else if (e.type == 'mousedown' || e.type == 'mouseup' || e.type == 'mousemove' || e.type == 'mouseover'|| e.type=='mouseout' || e.type=='mouseenter' || e.type=='mouseleave') {
-        //   x = e.clientX;
-        //   y = e.clientY;
-        // }
-      // })
-
-      // function getObservables() {
-      //   const mouseEventToCoordinate = mouseEvent => {
-      //     mouseEvent.preventDefault();
-      //     return {
-      //       x: mouseEvent.clientX,
-      //       y: mouseEvent.clientY
-      //     };
-      //   };
-
-      //   const touchEventToCoordinate = touchEvent => {
-      //     console.log('---')
-      //     touchEvent.preventDefault();
-      //     return {
-      //       x: touchEvent.changedTouches[0].clientX,
-      //       y: touchEvent.changedTouches[0].clientY
-      //     };
-      //   };
-
-      //   const mouseDowns = fromEvent($touchPad, "mousedown").map(mouseEventToCoordinate);
-      //   const mouseMoves = fromEvent($touchPad, "mousemove").map(mouseEventToCoordinate);
-      //   const mouseUps = fromEvent($touchPad, "mouseup").map(mouseEventToCoordinate);
-
-      //   const touchStarts = fromEvent($touchPad, "touchstart").map(touchEventToCoordinate);
-      //   const touchMoves = fromEvent($touchPad, "touchmove").map(touchEventToCoordinate);
-      //   const touchEnds = fromEvent($touchPad, "touchend").map(touchEventToCoordinate);
-
-      //   const starts = mouseDowns.merge(touchStarts);
-      //   const moves = mouseMoves.merge(touchMoves);
-      //   const ends = mouseUps.merge(touchEnds);
-
-      //   return { starts, moves, ends };
-      // }
 
       $space.click(() => {
         axios.post('/api/space').catch((err) => alert(err))
@@ -154,26 +173,6 @@
       const rightDown = fromEvent($right, 'mousedown').pipe(merge(fromEvent($right, 'touchstart')))
       const rightUp = fromEvent($right, 'mouseup').pipe(merge(fromEvent($right, 'touchend')))
 
-      fromEvent($touchPad, 'touchmove')
-        .subscribe(event => {
-            const x = event.touches[0].clientX;
-            const y = event.touches[0].clientY;
-            axios.post('/api/touch', { x: x, y: y }).catch((err) => alert(err))
-        });
-
-      // const touchDown = fromEvent($touchPad, 'mousedown').pipe(merge(fromEvent($touchPad, 'touchstart')))
-      // const touchUp = fromEvent($touchPad, 'mouseup').pipe(merge(fromEvent($touchPad, 'touchend')))
-
-
-      // const observables = getObservables();
-      // observables.moves.forEach(coordinate => {
-      //   console.log('Moved to', coordinate.x, coordinate.y);
-      //   axios.post('/api/touch', { x: coordinate.x, y: coordinate.y }).catch((err) => alert(err))
-      // });
-
-      // touchDown
-      //   .pipe(switchMap(() => timer(0, interval).pipe(takeUntil(touchUp))))
-      //   .subscribe(() =>  axios.post('/api/touch', { x, y }).then(() => console.log('---')).catch((err) => alert(err)))
 
       rightDown
         .pipe(switchMap(() => timer(0, interval).pipe(takeUntil(rightUp))))
@@ -182,6 +181,88 @@
       leftDown
         .pipe(switchMap(() => timer(0, interval).pipe(takeUntil(leftUp))))
         .subscribe(() => axios.post('/api/left').catch((err) => alert(err)))
+
+      // ========== Mouse Mode ==========
+      const $modeToggle = $('#mode-toggle')
+      const $remoteMode = $('#remote-mode')
+      const $mouseMode = $('#mouse-mode')
+      const $title = $('#title')
+      const mouseTrackpad = document.getElementById('mouse-trackpad')
+      const mouseScrollArea = document.getElementById('mouse-scroll-area')
+      let isMouseMode = false
+
+      $modeToggle.click(() => {
+        isMouseMode = !isMouseMode
+        if (isMouseMode) {
+          $remoteMode.hide()
+          $title.hide()
+          $mouseMode.addClass('active')
+          $modeToggle.html('<i class="gamepad icon"></i> 遙控模式')
+        } else {
+          $mouseMode.removeClass('active')
+          $remoteMode.show()
+          $title.show()
+          $modeToggle.html('<i class="mouse pointer icon"></i> 滑鼠模式')
+        }
+      })
+
+      // Trackpad
+      let lastTouchX = null
+      let lastTouchY = null
+      const sensitivity = 2.0
+
+      mouseTrackpad.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        lastTouchX = e.touches[0].clientX
+        lastTouchY = e.touches[0].clientY
+      })
+
+      mouseTrackpad.addEventListener('touchmove', (e) => {
+        e.preventDefault()
+        const t = e.touches[0]
+        if (lastTouchX !== null) {
+          const dx = Math.round((t.clientX - lastTouchX) * sensitivity)
+          const dy = Math.round((t.clientY - lastTouchY) * sensitivity)
+          if (dx !== 0 || dy !== 0) {
+            axios.post('/api/mouse/move', { dx, dy }).catch(() => {})
+          }
+        }
+        lastTouchX = t.clientX
+        lastTouchY = t.clientY
+      })
+
+      mouseTrackpad.addEventListener('touchend', () => {
+        lastTouchX = null
+        lastTouchY = null
+      })
+
+      // Scroll
+      let lastScrollY = null
+
+      mouseScrollArea.addEventListener('touchstart', (e) => {
+        e.preventDefault()
+        lastScrollY = e.touches[0].clientY
+      })
+
+      mouseScrollArea.addEventListener('touchmove', (e) => {
+        e.preventDefault()
+        const t = e.touches[0]
+        if (lastScrollY !== null) {
+          const dy = Math.round((lastScrollY - t.clientY) / 10)
+          if (dy !== 0) {
+            axios.post('/api/mouse/scroll', { dy }).catch(() => {})
+          }
+        }
+        lastScrollY = t.clientY
+      })
+
+      mouseScrollArea.addEventListener('touchend', () => {
+        lastScrollY = null
+      })
+
+      // Clicks
+      $('#mouse-left').click(() => axios.post('/api/mouse/left_click').catch((err) => alert(err)))
+      $('#mouse-right').click(() => axios.post('/api/mouse/right_click').catch((err) => alert(err)))
     </script>
   </body>
 </html>

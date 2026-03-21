@@ -26,9 +26,19 @@ fn press(key: enigo::Key) {
     en.key_click(key);
 }
 
-fn moving(x: i32, y: i32) {
+fn mouse_move_relative(dx: i32, dy: i32) {
     let mut en = Enigo::new();
-    en.mouse_move_to(x, y);
+    en.mouse_move_relative(dx, dy);
+}
+
+fn mouse_click(button: MouseButton) {
+    let mut en = Enigo::new();
+    en.mouse_click(button);
+}
+
+fn mouse_scroll(dy: i32) {
+    let mut en = Enigo::new();
+    en.mouse_scroll_y(dy);
 }
 
 fn get_volume() -> i8 {
@@ -95,13 +105,33 @@ async fn skip_intro() -> impl Responder {
 }
 
 #[derive(Deserialize)]
-struct TouchParams {
-    x: i32,
-    y: i32,
+struct MouseMoveParams {
+    dx: i32,
+    dy: i32,
 }
 
-async fn touch(params: web::Json<TouchParams>) -> impl Responder {
-    moving(params.x, params.y);
+async fn mouse_move(params: web::Json<MouseMoveParams>) -> impl Responder {
+    mouse_move_relative(params.dx, params.dy);
+    HttpResponse::Ok().body("Ok")
+}
+
+async fn mouse_left_click() -> impl Responder {
+    mouse_click(MouseButton::Left);
+    "Ok"
+}
+
+async fn mouse_right_click() -> impl Responder {
+    mouse_click(MouseButton::Right);
+    "Ok"
+}
+
+#[derive(Deserialize)]
+struct ScrollParams {
+    dy: i32,
+}
+
+async fn mouse_scroll_handler(params: web::Json<ScrollParams>) -> impl Responder {
+    mouse_scroll(params.dy);
     HttpResponse::Ok().body("Ok")
 }
 
@@ -120,7 +150,10 @@ async fn main() -> std::io::Result<()> {
             .route("/api/volume_down", web::post().to(volume_down))
             .route("/api/volume_up", web::post().to(volume_up))
             .route("/api/skip_intro", web::post().to(skip_intro))
-            .route("/api/touch", web::post().to(touch))
+            .route("/api/mouse/move", web::post().to(mouse_move))
+            .route("/api/mouse/left_click", web::post().to(mouse_left_click))
+            .route("/api/mouse/right_click", web::post().to(mouse_right_click))
+            .route("/api/mouse/scroll", web::post().to(mouse_scroll_handler))
     })
     .bind("0.0.0.0:3000")?
     .run()
