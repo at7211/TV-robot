@@ -88,16 +88,32 @@
         color: #888;
         font-size: 0.8em;
       }
+
+      /* iPad / tablet */
+      @media (min-width: 768px) {
+        #mouse-buttons {
+          height: 25vh;
+          min-height: 160px;
+        }
+        #mouse-buttons button {
+          font-size: 2em;
+        }
+        #mouse-scroll-area {
+          width: 80px;
+          font-size: 1em;
+        }
+      }
       #mouse-buttons {
         display: flex;
-        height: 80px;
+        height: 20vh;
+        min-height: 100px;
       }
       #mouse-buttons button {
         flex: 1;
-        height: 80px !important;
+        height: 100% !important;
         margin: 0 !important;
         border-radius: 0 !important;
-        font-size: 1.1em;
+        font-size: 1.4em;
       }
     </style>
   </head>
